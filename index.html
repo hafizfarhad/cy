@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Strength Checker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #333;  /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #fff;  /* White text for contrast */
+            flex-direction: column; /* Stack the content and footer */
+        }
+
+        .container {
+            background-color: #222;  /* Dark container background */
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            margin-bottom: 20px; /* Space between content and footer */
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #fff;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .input-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            padding-right: 45px; /* Space for the eye icon */
+            margin-bottom: 20px;
+            border: 2px solid #555;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #444;  /* Dark input background */
+            color: #fff;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="password"]:focus, input[type="text"]:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+
+        .eye-icon {
+            position: absolute;
+            top: 35%;
+            right: 15px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 20px;
+            color: #fff;
+            transition: color 0.3s ease;
+        }
+
+        .eye-icon:hover {
+            color: #4CAF50;
+        }
+
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .strong {
+            background-color: #e0ffe0;
+            color: #2e8b57;
+        }
+
+        .weak {
+            background-color: #ffe0e0;
+            color: #d9534f;
+        }
+
+        .conclusion {
+            font-weight: 600;
+            margin-top: 10px;
+            color: #d9534f;
+        }
+
+        /* Footer Styles */
+        footer {
+            font-size: 14px;
+            color: #ddd;
+            background-color: #222;
+            width: 100%;
+            text-align: center;
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            border-top: 1px solid #444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Password Strength Checker</h1>
+        <div class="input-container">
+            <input type="password" id="password" required="required" placeholder="Enter your password">
+            <i id="togglePassword" class="fas fa-eye eye-icon"></i>
+        </div>
+        <button id="checkPassword" class="button">Check Strength</button>
+        <div id="feedback" class="feedback"></div>
+    </div>
+
+    <footer>
+        A project by Hafiz Farhad and Sohaib Ali
+    </footer>
+
+    <script>
+        const commonPasswordsUrl = "./common_passwords.txt";
+        let commonPasswords = new Set();
+
+        fetch(commonPasswordsUrl)
+            .then(response => {
+                if (!response.ok) throw new Error(`Failed to load ${commonPasswordsUrl}.`);
+                return response.text();
+            })
+            .then(data => {
+                commonPasswords = new Set(
+                    data.split(/\r?\n/).map(password => password.trim().toLowerCase()).filter(password => password.length > 0)
+                );
+            })
+            .catch(error => {
+                console.error("Error loading common passwords file:", error);
+            });
+
+        function checkPasswordStrength(password) {
+            let feedback = [];
+            let isCommon = false;
+            const passwordLower = password.toLowerCase();
+
+            for (const commonPassword of commonPasswords) {
+                if (passwordLower.includes(commonPassword)) {
+                    feedback.push(`This password contains a common phrase ("${commonPassword}").`);
+                    isCommon = true;
+                    break;
+                }
+            }
+
+            if (!isCommon) {
+                if (password.length < 10) feedback.push("Password is too short (minimum 10 characters).");
+                if (!/[A-Z]/.test(password)) feedback.push("Add at least one uppercase letter.");
+                if (!/[a-z]/.test(password)) feedback.push("Add at least one lowercase letter.");
+                if (!/[0-9]/.test(password)) feedback.push("Add at least one number.");
+                if (!/[!@#$%^&*(),.?\":{}|<>]/.test(password)) feedback.push("Add at least one special character.");
+                if (/(.)\1{2,}/.test(password)) feedback.push("Avoid repeated characters (e.g., 'aaa').");
+                if (/123|abc|password/.test(passwordLower)) feedback.push("Avoid predictable patterns (e.g., '123', 'abc').");
+            
+            }
+
+            return { message: feedback.length === 0 ? "Strong password!" : feedback.join("<br>"), isCommon, isStrong: feedback.length === 0 };
+        }
+
+        document.getElementById("togglePassword").addEventListener("click", () => {
+            const passwordInput = document.getElementById("password");
+            const type = passwordInput.type === "password" ? "text" : "password";
+            passwordInput.type = type;
+            document.getElementById("togglePassword").classList.toggle("fa-eye-slash");
+        });
+
+        document.getElementById("checkPassword").addEventListener("click", () => {
+            const password = document.getElementById("password").value;
+            const { message, isCommon, isStrong } = checkPasswordStrength(password);
+
+            const feedbackDiv = document.getElementById("feedback");
+            feedbackDiv.innerHTML = message;
+            feedbackDiv.className = "feedback " + (isStrong ? "strong" : "weak");
+
+            if (isCommon) {
+                feedbackDiv.innerHTML += "<br><strong class='conclusion'>Conclusion: This is a common password!</strong>";
+            }
+        });
+    </script>
+</body>
+</html>
